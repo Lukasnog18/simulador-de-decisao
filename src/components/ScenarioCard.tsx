@@ -51,40 +51,72 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({ scenario }) => {
   const [newAlternative, setNewAlternative] = useState("");
   const [editData, setEditData] = useState({
     title: scenario.title,
-    description: scenario.description,
+    description: scenario.description || "",
   });
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editData.title.trim() || !editData.description.trim()) {
       toast.error("Preencha todos os campos");
       return;
     }
-    updateScenario(scenario.id, editData);
-    setIsEditing(false);
-    toast.success("Cenário atualizado");
+    try {
+      await updateScenario(scenario.id, editData);
+      setIsEditing(false);
+      toast.success("Cenário atualizado");
+    } catch (error) {
+      toast.error("Erro ao atualizar cenário");
+    }
   };
 
   const handleCancelEdit = () => {
-    setEditData({ title: scenario.title, description: scenario.description });
+    setEditData({ title: scenario.title, description: scenario.description || "" });
     setIsEditing(false);
   };
 
-  const handleDelete = () => {
-    deleteScenario(scenario.id);
-    toast.success("Cenário excluído");
+  const handleDelete = async () => {
+    try {
+      await deleteScenario(scenario.id);
+      toast.success("Cenário excluído");
+    } catch (error) {
+      toast.error("Erro ao excluir cenário");
+    }
   };
 
-  const handleAddAlternative = () => {
+  const handleAddAlternative = async () => {
     if (!newAlternative.trim()) return;
-    addAlternative(scenario.id, newAlternative.trim());
-    setNewAlternative("");
-    setIsAddingAlternative(false);
-    toast.success("Alternativa adicionada");
+    try {
+      await addAlternative(scenario.id, newAlternative.trim());
+      setNewAlternative("");
+      setIsAddingAlternative(false);
+      toast.success("Alternativa adicionada");
+    } catch (error) {
+      toast.error("Erro ao adicionar alternativa");
+    }
   };
 
   const handleRegenerate = async () => {
-    await regenerateAlternatives(scenario.id);
-    toast.success("Novas alternativas geradas");
+    try {
+      await regenerateAlternatives(scenario.id);
+      toast.success("Novas alternativas geradas");
+    } catch (error) {
+      toast.error("Erro ao gerar alternativas");
+    }
+  };
+
+  const handleUpdateAlternative = async (alternativeId: string, content: string) => {
+    try {
+      await updateAlternative(scenario.id, alternativeId, content);
+    } catch (error) {
+      toast.error("Erro ao atualizar alternativa");
+    }
+  };
+
+  const handleDeleteAlternative = async (alternativeId: string) => {
+    try {
+      await deleteAlternative(scenario.id, alternativeId);
+    } catch (error) {
+      toast.error("Erro ao excluir alternativa");
+    }
   };
 
   return (
@@ -105,7 +137,7 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({ scenario }) => {
             <span>{scenario.alternatives.length} alternativas</span>
             <span>•</span>
             <span>
-              {format(scenario.updatedAt, "d 'de' MMM, yyyy", { locale: ptBR })}
+              {format(new Date(scenario.updated_at), "d 'de' MMM, yyyy", { locale: ptBR })}
             </span>
           </div>
         </div>
@@ -223,10 +255,10 @@ export const ScenarioCard: React.FC<ScenarioCardProps> = ({ scenario }) => {
                       alternative={alt}
                       index={index}
                       canDelete={scenario.alternatives.length > 1}
-                      onUpdate={(text) =>
-                        updateAlternative(scenario.id, alt.id, text)
+                      onUpdate={(content) =>
+                        handleUpdateAlternative(alt.id, content)
                       }
-                      onDelete={() => deleteAlternative(scenario.id, alt.id)}
+                      onDelete={() => handleDeleteAlternative(alt.id)}
                     />
                   ))}
                 </div>

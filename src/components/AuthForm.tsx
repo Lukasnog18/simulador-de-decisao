@@ -12,7 +12,6 @@ export const AuthForm: React.FC = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    name: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,8 +23,8 @@ export const AuthForm: React.FC = () => {
         await login(formData.email, formData.password);
         toast.success("Bem-vindo de volta!");
       } else {
-        await register(formData.email, formData.password, formData.name);
-        toast.success("Conta criada com sucesso!");
+        await register(formData.email, formData.password);
+        toast.success("Conta criada! Verifique seu email se necessário.");
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao autenticar");
@@ -47,23 +46,6 @@ export const AuthForm: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {!isLogin && (
-            <div className="space-y-2 animate-slide-down">
-              <Label htmlFor="name">Nome</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Seu nome"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                required={!isLogin}
-                className="bg-card"
-              />
-            </div>
-          )}
-
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -90,9 +72,12 @@ export const AuthForm: React.FC = () => {
                 setFormData({ ...formData, password: e.target.value })
               }
               required
-              minLength={4}
+              minLength={6}
               className="bg-card"
             />
+            {!isLogin && (
+              <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
+            )}
           </div>
 
           <Button

@@ -19,7 +19,7 @@ export const Header: React.FC = () => {
           {isAuthenticated && user && (
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground">
-                {user.name}
+                {user.email}
               </span>
               <Button
                 variant="ghost"

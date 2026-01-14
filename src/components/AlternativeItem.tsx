@@ -20,7 +20,7 @@ export const AlternativeItem: React.FC<AlternativeItemProps> = ({
   onDelete,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(alternative.text);
+  const [editText, setEditText] = useState(alternative.content);
 
   const handleSave = () => {
     if (editText.trim()) {
@@ -30,7 +30,7 @@ export const AlternativeItem: React.FC<AlternativeItemProps> = ({
   };
 
   const handleCancel = () => {
-    setEditText(alternative.text);
+    setEditText(alternative.content);
     setIsEditing(false);
   };
 
@@ -63,7 +63,7 @@ export const AlternativeItem: React.FC<AlternativeItemProps> = ({
         ) : (
           <div className="flex items-start justify-between gap-2">
             <p className="text-foreground leading-relaxed">
-              {alternative.text}
+              {alternative.content}
             </p>
             <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
               <Button

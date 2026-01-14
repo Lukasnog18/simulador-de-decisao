@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, AuthState } from "@/types";
-import { userStorage } from "@/services/storage";
+import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
+  register: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -22,6 +23,14 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const mapSessionToUser = (session: Session | null): User | null => {
+  if (!session?.user) return null;
+  return {
+    id: session.user.id,
+    email: session.user.email ?? "",
+  };
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -30,67 +39,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   });
 
   useEffect(() => {
-    // Check for existing session
-    const user = userStorage.get();
-    setState({
-      user,
-      isAuthenticated: !!user,
-      isLoading: false,
+    // Set up auth state listener BEFORE checking session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const user = mapSessionToUser(session);
+      setState({
+        user,
+        isAuthenticated: !!user,
+        isLoading: false,
+      });
     });
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = mapSessionToUser(session);
+      setState({
+        user,
+        isAuthenticated: !!user,
+        isLoading: false,
+      });
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simulate API call - prepared for Supabase auth
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    // Simple validation for demo
-    if (!email.includes("@") || password.length < 4) {
-      throw new Error("Credenciais inválidas");
-    }
-
-    const user: User = {
-      id: crypto.randomUUID(),
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      name: email.split("@")[0],
-    };
-
-    userStorage.save(user);
-    setState({
-      user,
-      isAuthenticated: true,
-      isLoading: false,
+      password,
     });
+
+    if (error) {
+      throw new Error(error.message);
+    }
   };
 
-  const register = async (email: string, password: string, name: string) => {
-    // Simulate API call - prepared for Supabase auth
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    if (!email.includes("@") || password.length < 4 || !name.trim()) {
-      throw new Error("Dados inválidos");
-    }
-
-    const user: User = {
-      id: crypto.randomUUID(),
+  const register = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
       email,
-      name,
-    };
-
-    userStorage.save(user);
-    setState({
-      user,
-      isAuthenticated: true,
-      isLoading: false,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
     });
+
+    if (error) {
+      throw new Error(error.message);
+    }
   };
 
-  const logout = () => {
-    userStorage.clear();
-    setState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw new Error(error.message);
+    }
   };
 
   return (

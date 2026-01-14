@@ -1,23 +1,23 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
 }
 
 export interface Alternative {
   id: string;
-  text: string;
-  createdAt: Date;
+  scenario_id: string;
+  content: string;
+  created_at: string;
 }
 
 export interface Scenario {
   id: string;
-  userId: string;
+  user_id: string;
   title: string;
-  description: string;
+  description: string | null;
   alternatives: Alternative[];
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AuthState {

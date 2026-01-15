@@ -1,20 +1,10 @@
-// AI service - generates placeholder alternatives
-// Currently simulates AI generation
+// AI service - generates concrete decision alternatives via Lovable AI Gateway
+
+import { supabase } from "@/integrations/supabase/client";
 
 interface GeneratedAlternative {
   text: string;
 }
-
-const alternativeTemplates = [
-  "Considerar os impactos a longo prazo desta escolha",
-  "Avaliar os recursos necessários para implementação",
-  "Consultar stakeholders relevantes antes de decidir",
-  "Criar um plano de contingência para riscos identificados",
-  "Estabelecer métricas de sucesso para acompanhamento",
-  "Realizar uma análise de custo-benefício detalhada",
-  "Identificar dependências e pré-requisitos",
-  "Definir um cronograma realista de execução",
-];
 
 export const aiService = {
   generateAlternatives: async (
@@ -22,26 +12,33 @@ export const aiService = {
     description: string,
     count: number = 3
   ): Promise<GeneratedAlternative[]> => {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const { data, error } = await supabase.functions.invoke("generate-alternatives", {
+      body: { title, description, count },
+    });
 
-    // Generate contextual alternatives based on input
-    const alternatives: GeneratedAlternative[] = [];
-    const usedIndices = new Set<number>();
-
-    for (let i = 0; i < count; i++) {
-      let index: number;
-      do {
-        index = Math.floor(Math.random() * alternativeTemplates.length);
-      } while (usedIndices.has(index) && usedIndices.size < alternativeTemplates.length);
-      
-      usedIndices.add(index);
-
-      alternatives.push({
-        text: `${alternativeTemplates[index]} para "${title.slice(0, 30)}${title.length > 30 ? '...' : ''}"`,
-      });
+    if (error) {
+      console.error("Error generating alternatives:", error);
+      throw new Error(error.message || "Erro ao gerar alternativas");
     }
 
-    return alternatives;
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+
+    if (!data?.alternatives || !Array.isArray(data.alternatives)) {
+      throw new Error("Resposta inválida da IA");
+    }
+
+    return data.alternatives.map((text: string) => ({ text }));
+  },
+
+  validateContext: (description: string): { valid: boolean; message?: string } => {
+    if (!description || description.trim().length < 20) {
+      return {
+        valid: false,
+        message: "Descreva melhor o contexto da sua decisão (mínimo 20 caracteres). Inclua fatores como objetivos, restrições, preferências e critérios importantes.",
+      };
+    }
+    return { valid: true };
   },
 };
